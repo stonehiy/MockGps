@@ -7,9 +7,11 @@ import android.location.LocationProvider
 import android.location.Criteria
 
 import android.location.LocationManager
+import android.location.provider.ProviderProperties
 
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.RequiresApi
 import com.baidu.mapapi.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -22,10 +24,11 @@ import kotlin.collections.ArrayList
  */
 object Utils {
 
-    @SuppressLint("WrongConstant")
+
+
     fun isAllowMockLocation(context: Context): Boolean {
-        var canMockPosition: Boolean
-        if (Build.VERSION.SDK_INT <= 22) { //6.0以下
+        var canMockPosition: Boolean = false;
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) { //6.0以下
             canMockPosition = Settings.Secure.getInt(
                 context.applicationContext.getContentResolver(),
                 Settings.Secure.ALLOW_MOCK_LOCATION,
@@ -36,47 +39,54 @@ object Utils {
                 val locationManager =
                     context.applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager //获得LocationManager引用
                 val providerStr = LocationManager.GPS_PROVIDER
-                val provider = locationManager.getProvider(providerStr)
-                if (provider != null) {
-                    locationManager.addTestProvider(
-                        provider.name,
-                        provider.requiresNetwork(),
-                        provider.requiresSatellite(),
-                        provider.requiresCell(),
-                        provider.hasMonetaryCost(),
-                        provider.supportsAltitude(),
-                        provider.supportsSpeed(),
-                        provider.supportsBearing(),
-                        provider.powerRequirement,
-                        provider.accuracy
-                    )
-                } else {
-                    locationManager.addTestProvider(
-                        providerStr,
-                        true,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        true,
-                        Criteria.POWER_HIGH,
-                        Criteria.ACCURACY_FINE
-                    )
+                if(Build.VERSION.SDK_INT in 23..30){
+
+                    val provider = locationManager.getProvider(providerStr)
+                    if (provider != null) {
+                        locationManager.addTestProvider(
+                            provider.name,
+                            provider.requiresNetwork(),
+                            provider.requiresSatellite(),
+                            provider.requiresCell(),
+                            provider.hasMonetaryCost(),
+                            provider.supportsAltitude(),
+                            provider.supportsSpeed(),
+                            provider.supportsBearing(),
+                            provider.powerRequirement,
+                            provider.accuracy
+                        )
+                        locationManager.setTestProviderStatus(
+                            providerStr,
+                            LocationProvider.AVAILABLE,
+                            null,
+                            System.currentTimeMillis()
+                        )
+                    }
+
+                }else{
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        locationManager.getProviderProperties( providerStr)
+                        locationManager.addTestProvider(
+                            providerStr,
+                            true,
+                            true,
+                            false,
+                            false,
+                            true,
+                            true,
+                            true,
+                            ProviderProperties.POWER_USAGE_HIGH,
+                            ProviderProperties.ACCURACY_FINE
+                        )
+
+                    }
+
                 }
                 locationManager.setTestProviderEnabled(providerStr, true)
-                locationManager.setTestProviderStatus(
-                    providerStr,
-                    LocationProvider.AVAILABLE,
-                    null,
-                    System.currentTimeMillis()
-                )
                 // 模拟位置可用
                 canMockPosition = true
                 locationManager.setTestProviderEnabled(providerStr, false)
                 locationManager.removeTestProvider(providerStr)
-            } catch (e: IllegalArgumentException) {
-                canMockPosition = true
             } catch (e: Exception) {
                 e.printStackTrace()
                 canMockPosition = false
