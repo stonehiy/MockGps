@@ -1,6 +1,7 @@
 package com.huolala.mockgps.ui
 
 import android.content.Intent
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -45,7 +46,12 @@ class MainActivity : BaseActivity<ActivityMainBinding, BaseViewModel>(), View.On
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == RESULT_OK) {
                 it.data?.run {
-                    val parcelableExtra = this.getParcelableExtra<PoiInfoModel>("poiInfo")
+                    val parcelableExtra =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            this.getParcelableExtra("poiInfo", PoiInfoModel::class.java)
+                        } else {
+                            this.getParcelableExtra<PoiInfoModel>("poiInfo")
+                        }
                     setDataToView(parcelableExtra)
                 }
             }
@@ -141,26 +147,22 @@ class MainActivity : BaseActivity<ActivityMainBinding, BaseViewModel>(), View.On
             when (poiInfoType) {
                 PoiInfoType.LOCATION -> {
                     tv_location_name.text = String.format(
-                        "目标：%s",
-                        name
+                        "目标：%s", name
                     )
                     tv_location_latlng.text = String.format(
-                        "经纬度：%f , %f",
-                        latLng?.longitude, latLng?.latitude
+                        "经纬度：%f , %f", latLng?.longitude, latLng?.latitude
                     )
                     tv_location_latlng.tag = this
                 }
                 PoiInfoType.NAVI_START -> {
                     tv_navi_name_start.text = String.format(
-                        "起点：%s",
-                        name
+                        "起点：%s", name
                     )
                     tv_navi_name_start.tag = this
                 }
                 PoiInfoType.NAVI_END -> {
                     tv_navi_name_end.text = String.format(
-                        "终点：%s",
-                        name
+                        "终点：%s", name
                     )
                     tv_navi_name_end.tag = this
                 }
@@ -176,17 +178,14 @@ class MainActivity : BaseActivity<ActivityMainBinding, BaseViewModel>(), View.On
                 startActivity(Intent(this, ExpandActivity::class.java))
             }
             ll_location_card -> {
-                registerForActivityResult.launch(
-                    Intent(
-                        this@MainActivity,
-                        PickMapPoiActivity::class.java
-                    ).apply {
-                        putExtra("from_tag", PoiInfoType.LOCATION)
-                        if (tv_location_latlng.tag != null) {
-                            putExtra("model", tv_location_latlng.tag as PoiInfoModel?)
-                        }
+                registerForActivityResult.launch(Intent(
+                    this@MainActivity, PickMapPoiActivity::class.java
+                ).apply {
+                    putExtra("from_tag", PoiInfoType.LOCATION)
+                    if (tv_location_latlng.tag != null) {
+                        putExtra("model", tv_location_latlng.tag as PoiInfoModel?)
                     }
-                )
+                })
             }
             btn_start_location -> {
                 if (tv_location_latlng.tag == null) {
@@ -225,30 +224,24 @@ class MainActivity : BaseActivity<ActivityMainBinding, BaseViewModel>(), View.On
                 getHistoryData()
             }
             tv_navi_name_start -> {
-                registerForActivityResult.launch(
-                    Intent(
-                        this@MainActivity,
-                        PickMapPoiActivity::class.java
-                    ).apply {
-                        putExtra("from_tag", PoiInfoType.NAVI_START)
-                        if (tv_navi_name_start.tag != null) {
-                            putExtra("model", tv_navi_name_start.tag as PoiInfoModel?)
-                        }
+                registerForActivityResult.launch(Intent(
+                    this@MainActivity, PickMapPoiActivity::class.java
+                ).apply {
+                    putExtra("from_tag", PoiInfoType.NAVI_START)
+                    if (tv_navi_name_start.tag != null) {
+                        putExtra("model", tv_navi_name_start.tag as PoiInfoModel?)
                     }
-                )
+                })
             }
             tv_navi_name_end -> {
-                registerForActivityResult.launch(
-                    Intent(
-                        this@MainActivity,
-                        PickMapPoiActivity::class.java
-                    ).apply {
-                        putExtra("from_tag", PoiInfoType.NAVI_END)
-                        if (tv_navi_name_end.tag != null) {
-                            putExtra("model", tv_navi_name_end.tag as PoiInfoModel?)
-                        }
+                registerForActivityResult.launch(Intent(
+                    this@MainActivity, PickMapPoiActivity::class.java
+                ).apply {
+                    putExtra("from_tag", PoiInfoType.NAVI_END)
+                    if (tv_navi_name_end.tag != null) {
+                        putExtra("model", tv_navi_name_end.tag as PoiInfoModel?)
                     }
-                )
+                })
             }
             btn_start_navi -> {
                 if (tv_navi_name_start.tag == null || tv_navi_name_end.tag == null) {

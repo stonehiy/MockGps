@@ -8,6 +8,7 @@ import android.graphics.PixelFormat
 import android.location.Criteria
 import android.location.Location
 import android.location.LocationManager
+import android.location.LocationProvider
 import android.location.provider.ProviderProperties
 import android.os.*
 import android.provider.Settings
@@ -232,7 +233,7 @@ class GpsAndFloatingService : Service() {
         layoutParams?.height = WindowManager.LayoutParams.WRAP_CONTENT
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+
     private fun initView() {
         view = LayoutInflater.from(this).inflate(R.layout.layout_floating, null)
 
@@ -309,7 +310,11 @@ class GpsAndFloatingService : Service() {
         model = null
         if (Utils.isAllowMockLocation(this)) {
             intent?.run {
-                model = getParcelableExtra("info")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    model = getParcelableExtra("info",MockMessageModel::class.java)
+                }else{
+                    model = getParcelableExtra("info")
+                }
             }
         }
         mockLocation()
@@ -448,24 +453,50 @@ class GpsAndFloatingService : Service() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     powerUsageMedium = ProviderProperties.POWER_USAGE_LOW
                     accuracyCoarse = ProviderProperties.ACCURACY_FINE
+                    addTestProvider(
+                        providerStr,
+                        false,
+                        false,
+                        false,
+                        false,
+                        true,
+                        true,
+                        true,
+                        powerUsageMedium,
+                        accuracyCoarse
+                    )
+                }else{
+                    val provider = getProvider(providerStr)
+                    if (provider != null) {
+                        addTestProvider(
+                            provider.name,
+                            provider.requiresNetwork(),
+                            provider.requiresSatellite(),
+                            provider.requiresCell(),
+                            provider.hasMonetaryCost(),
+                            provider.supportsAltitude(),
+                            provider.supportsSpeed(),
+                            provider.supportsBearing(),
+                            provider.powerRequirement,
+                            provider.accuracy
+                        )
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                            setTestProviderStatus(
+                                providerStr,
+                                LocationProvider.AVAILABLE,
+                                null,
+                                System.currentTimeMillis()
+                            )
+                        }
+
+                    }
+
                 }
                 // @throws IllegalArgumentException if a provider with the given name already exists
-                addTestProvider(
-                    providerStr,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    true,
-                    true,
-                    powerUsageMedium,
-                    accuracyCoarse
-                )
+
                 setTestProviderEnabled(providerStr, true)
                 setTestProviderLocation(providerStr, location)
-            } catch (e: IllegalArgumentException) {
-                setTestProviderLocation(providerStr, location)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }

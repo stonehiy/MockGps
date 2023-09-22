@@ -55,12 +55,14 @@ object Utils {
                             provider.powerRequirement,
                             provider.accuracy
                         )
-                        locationManager.setTestProviderStatus(
-                            providerStr,
-                            LocationProvider.AVAILABLE,
-                            null,
-                            System.currentTimeMillis()
-                        )
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                            locationManager.setTestProviderStatus(
+                                providerStr,
+                                LocationProvider.AVAILABLE,
+                                null,
+                                System.currentTimeMillis()
+                            )
+                        }
                     }
 
                 }else{
@@ -137,7 +139,9 @@ object Utils {
                 }
             }
         }.also {
+
             return latLngList
+
         }
     }
 
